@@ -141,7 +141,8 @@ public class PostgresConnectorTask extends BaseSourceTask<PostgresPartition, Pos
                         if (ex.getMessage().contains("already exists")) {
                             message += "; when setting up multiple connectors for the same database host, please make sure to use a distinct replication slot name for each.";
                         }
-                        throw new DebeziumException(message, ex);
+                        // throw new DebeziumException(message, ex);
+                        throw new RetriableException(message, ex);
                     }
                 }
                 else {
@@ -177,8 +178,10 @@ public class PostgresConnectorTask extends BaseSourceTask<PostgresPartition, Pos
                         String sqlErrorId = exception.getSQLState();
                         switch (sqlErrorId) {
                             case "57P01":
+                                LOGGER.error("GOT_AN_ERROR: admin_shutdown!!! TRY TO RESTART!!!", exception);
                                 // Postgres error admin_shutdown, see https://www.postgresql.org/docs/12/errcodes-appendix.html
-                                throw new DebeziumException("Could not execute heartbeat action (Error: " + sqlErrorId + ")", exception);
+                                // throw new DebeziumException("Could not execute heartbeat action (Error: " + sqlErrorId + ")", exception);
+                                throw new RetriableException("Could not execute heartbeat action due to admin_shutdown, retry... (Error: " + sqlErrorId + ")", exception);
                             case "57P03":
                                 // Postgres error cannot_connect_now, see https://www.postgresql.org/docs/12/errcodes-appendix.html
                                 throw new RetriableException("Could not execute heartbeat action (Error: " + sqlErrorId + ")", exception);

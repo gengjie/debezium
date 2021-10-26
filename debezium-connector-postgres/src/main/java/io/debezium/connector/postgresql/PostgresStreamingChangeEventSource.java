@@ -167,6 +167,8 @@ public class PostgresStreamingChangeEventSource implements StreamingChangeEventS
             processMessages(context, partition, offsetContext, stream);
         }
         catch (Throwable e) {
+            String errorMsg = "GOT_AN_ERROR:\t";
+            LOGGER.error(errorMsg + e.getMessage(), e);
             errorHandler.setProducerThrowable(e);
         }
         finally {

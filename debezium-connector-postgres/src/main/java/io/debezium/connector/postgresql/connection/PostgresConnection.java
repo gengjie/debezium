@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc.PgConnection;
 import org.postgresql.jdbc.TimestampUtils;
@@ -27,7 +28,6 @@ import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.debezium.DebeziumException;
 import io.debezium.annotation.VisibleForTesting;
 import io.debezium.config.Configuration;
 import io.debezium.connector.postgresql.PgOid;
@@ -466,7 +466,9 @@ public class PostgresConnection extends JdbcConnection {
             return Charset.forName(((BaseConnection) connection()).getEncoding().name());
         }
         catch (SQLException e) {
-            throw new DebeziumException("Couldn't obtain encoding for database " + database(), e);
+            // todo CHANGE DebeziumException to RetriableException
+            // throw new DebeziumException("Couldn't obtain encoding for database " + database(), e);
+            throw new RetriableException("Couldn't obtain encoding for database " + database() + ", TRY TO RESTART!", e);
         }
     }
 
@@ -475,7 +477,8 @@ public class PostgresConnection extends JdbcConnection {
             return ((PgConnection) this.connection()).getTimestampUtils();
         }
         catch (SQLException e) {
-            throw new DebeziumException("Couldn't get timestamp utils from underlying connection", e);
+            // throw new DebeziumException("Couldn't get timestamp utils from underlying connection", e);
+            throw new RetriableException("Couldn't get timestamp utils from underlying connection", e);
         }
     }
 
