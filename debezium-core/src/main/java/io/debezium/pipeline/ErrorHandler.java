@@ -7,6 +7,7 @@ package io.debezium.pipeline;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.source.SourceConnector;
 import org.slf4j.Logger;
@@ -29,18 +30,17 @@ public class ErrorHandler {
     public void setProducerThrowable(Throwable producerThrowable) {
         LOGGER.error("Producer failure", producerThrowable);
 
-        // boolean first = this.producerThrowable.compareAndSet(null, producerThrowable);
-        // boolean retriable = isRetriable(producerThrowable);
+        boolean first = this.producerThrowable.compareAndSet(null, producerThrowable);
+        boolean retriable = isRetriable(producerThrowable) || producerThrowable instanceof  RetriableException;
 
-        // if (first) {
-        // if (retriable) {
-        queue.producerException(
-                new RetriableException("An exception occurred in the change event producer. This connector will be restarted.", producerThrowable));
-        // }
-        // else {
-        // queue.producerException(new ConnectException("An exception occurred in the change event producer. This connector will be stopped.", producerThrowable));
-        // }
-        // }
+        if (first) {
+            if (retriable) {
+                queue.producerException(
+                        new RetriableException("An exception occurred in the change event producer. This connector will be restarted.", producerThrowable));
+            } else {
+                queue.producerException(new ConnectException("An exception occurred in the change event producer. This connector will be stopped.", producerThrowable));
+            }
+        }
     }
 
     public Throwable getProducerThrowable() {
