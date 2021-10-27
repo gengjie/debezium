@@ -170,7 +170,7 @@ public class PostgresStreamingChangeEventSource implements StreamingChangeEventS
         catch (Throwable e) {
             LOGGER.error(e.getMessage(), e);
             if (connectorConfig.autoReconnectOnFailure()) {
-                e = new RetriableException(e.getCause());
+                e = new RetriableException(e.getMessage(), e);
             }
             errorHandler.setProducerThrowable(e);
         }

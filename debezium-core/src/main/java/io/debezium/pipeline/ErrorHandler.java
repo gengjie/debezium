@@ -31,13 +31,14 @@ public class ErrorHandler {
         LOGGER.error("Producer failure", producerThrowable);
 
         boolean first = this.producerThrowable.compareAndSet(null, producerThrowable);
-        boolean retriable = isRetriable(producerThrowable) || producerThrowable instanceof  RetriableException;
+        boolean retriable = isRetriable(producerThrowable) || producerThrowable instanceof RetriableException;
 
         if (first) {
             if (retriable) {
                 queue.producerException(
                         new RetriableException("An exception occurred in the change event producer. This connector will be restarted.", producerThrowable));
-            } else {
+            }
+            else {
                 queue.producerException(new ConnectException("An exception occurred in the change event producer. This connector will be stopped.", producerThrowable));
             }
         }
