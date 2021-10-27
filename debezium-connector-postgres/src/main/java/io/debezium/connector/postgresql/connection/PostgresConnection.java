@@ -28,6 +28,7 @@ import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.debezium.DebeziumException;
 import io.debezium.annotation.VisibleForTesting;
 import io.debezium.config.Configuration;
 import io.debezium.connector.postgresql.PgOid;
@@ -461,14 +462,20 @@ public class PostgresConnection extends JdbcConnection {
         return serverInfo;
     }
 
+    private boolean autoReconnectOnFailure() {
+        LOGGER.info("Call autoReconnectOnFailure(): " + this.config().getBoolean(JdbcConfiguration.AUTO_RECONNECT_ON_FAILURE));
+        return this.config().getBoolean(JdbcConfiguration.AUTO_RECONNECT_ON_FAILURE);
+    }
+
     public Charset getDatabaseCharset() {
         try {
             return Charset.forName(((BaseConnection) connection()).getEncoding().name());
         }
         catch (SQLException e) {
-            // todo CHANGE DebeziumException to RetriableException
-            // throw new DebeziumException("Couldn't obtain encoding for database " + database(), e);
-            throw new RetriableException("Couldn't obtain encoding for database " + database() + ", TRY TO RESTART!", e);
+            if (autoReconnectOnFailure()) {
+                throw new RetriableException("Couldn't obtain encoding for database " + database() + ", try to restart!", e);
+            }
+            throw new DebeziumException("Couldn't obtain encoding for database " + database(), e);
         }
     }
 
@@ -477,7 +484,9 @@ public class PostgresConnection extends JdbcConnection {
             return ((PgConnection) this.connection()).getTimestampUtils();
         }
         catch (SQLException e) {
-            // throw new DebeziumException("Couldn't get timestamp utils from underlying connection", e);
+            if (autoReconnectOnFailure()) {
+                throw new RetriableException("Couldn't get timestamp utils from underlying connection, try to restart!", e);
+            }
             throw new RetriableException("Couldn't get timestamp utils from underlying connection", e);
         }
     }
